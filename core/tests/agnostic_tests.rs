@@ -4,6 +4,7 @@ use typeshare_core::{
     context::{ParseContext, ParseFileContext},
     language::{CrateTypes, Language, TypeScript},
     parser::{self},
+    ProcessInputError,
 };
 
 /// Parse and generate types for a single Rust input file.
