@@ -81,7 +81,7 @@ impl Language for TypeScript {
             | SpecialRustType::I64
             | SpecialRustType::ISize
             | SpecialRustType::U128
-            | SpecialRustType::USize => Ok("number".into())
+            | SpecialRustType::USize => Ok("number".into()),
         }
     }
 
