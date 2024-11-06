@@ -90,6 +90,7 @@ impl Language for Kotlin {
             SpecialRustType::Bool => "Boolean".into(),
             SpecialRustType::F32 => "Float".into(),
             SpecialRustType::F64 => "Double".into(),
+            SpecialRustType::U128 => "BigInteger".into(),
         })
     }
 

@@ -215,6 +215,7 @@ impl Language for Swift {
             SpecialRustType::Bool => "Bool".into(),
             SpecialRustType::F32 => "Float".into(),
             SpecialRustType::F64 => "Double".into(),
+            SpecialRustType::U128 => "UInt128".into(),
         })
     }
 
