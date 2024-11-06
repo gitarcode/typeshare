@@ -89,11 +89,10 @@ jobs:
           dist-args: --artifacts=global
           target: ''
           install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.sh | sh
-        # Since we don't have a macos-11 runner, we will build manually on mac and upload
-        # - os: macos-11
-        #   dist-args: --artifacts=local --target=aarch64-apple-darwin --target=x86_64-apple-darwin
-        #   target: 'aarch64-apple-darwin x86_64-apple-darwin'
-        #   install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.sh | sh
+        - os: macos-11
+          dist-args: --artifacts=local --target=aarch64-apple-darwin --target=x86_64-apple-darwin
+          target: 'aarch64-apple-darwin x86_64-apple-darwin'
+          install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.sh | sh
         - os: ubuntu-20.04
           dist-args: --artifacts=local --target=x86_64-unknown-linux-gnu
           target: 'x86_64-unknown-linux-gnu'
@@ -102,11 +101,10 @@ jobs:
           dist-args: --artifacts=local --target=aarch64-unknown-linux-gnu
           target: 'aarch64-unknown-linux-gnu'
           install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.sh | sh  
-        # We don't care for windows right now
-        # - os: windows-2019
-        #   dist-args: --artifacts=local --target=x86_64-pc-windows-msvc
-        #   target: 'x86_64-pc-windows-msvc'
-        #   install-dist: irm  https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.ps1 | iex
+        - os: windows-2019
+          dist-args: --artifacts=local --target=x86_64-pc-windows-msvc
+          target: 'x86_64-pc-windows-msvc'
+          install-dist: irm  https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.ps1 | iex
 
     runs-on: ${{ matrix.os }}
     env:
@@ -124,7 +122,35 @@ jobs:
         # The two platforms don't agree on how to talk about env vars but they
         # do agree on 'cat' and '$()' so we use that to marshal values between commands.
         run: |
-          scripts/build.sh --target "${{ matrix.target }}" --version "${{ github.ref_name }}"
+          pip3 install ziglang
+          cargo install cargo-zigbuild
+          rustup target add ${{ matrix.target }}
+          cargo zigbuild --target ${{ matrix.target }} --release
+       
+          # Set binary name to typeshare
+          BINARY_NAME="typeshare"
+          TARGET_DIR="target/${{ matrix.target }}/release"
+          
+          # Create zip directory
+          mkdir -p "dist"
+          
+          # Create zip file with binary
+          ZIP_NAME="${BINARY_NAME}-${{ github.ref_name }}-${{ matrix.target }}.zip"
+          cd ${TARGET_DIR} && zip "../../../dist/${ZIP_NAME}" "${BINARY_NAME}${BINARY_SUFFIX}"
+          cd ../../..
+          
+          # Create manifest file similar to cargo-dist
+          echo "{\"artifacts\": [{\"path\": \"dist/${ZIP_NAME}\"}]}" > dist-manifest.json
+          
+          echo "Build complete, contents of dist-manifest.json:"
+          cat dist-manifest.json
+          
+          # Upload to release
+          cat dist-manifest.json | jq --raw-output ".artifacts[]?.path | select( . != null )" > uploads.txt
+          echo "uploading..."
+          cat uploads.txt
+          gh release upload ${{ github.ref_name }} $(cat uploads.txt)
+          echo "uploaded!"
 
   # Mark the Github Release™ as a non-draft now that everything has succeeded!
   publish-release:
