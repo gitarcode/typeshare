@@ -102,10 +102,11 @@ jobs:
           dist-args: --artifacts=local --target=aarch64-unknown-linux-gnu
           target: 'aarch64-unknown-linux-gnu'
           install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.sh | sh  
-        - os: windows-2019
-          dist-args: --artifacts=local --target=x86_64-pc-windows-msvc
-          target: 'x86_64-pc-windows-msvc'
-          install-dist: irm  https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.ps1 | iex
+        # We don't care for windows right now
+        # - os: windows-2019
+        #   dist-args: --artifacts=local --target=x86_64-pc-windows-msvc
+        #   target: 'x86_64-pc-windows-msvc'
+        #   install-dist: irm  https://github.com/axodotdev/cargo-dist/releases/download/v0.0.4/cargo-dist-v0.0.4-installer.ps1 | iex
 
     runs-on: ${{ matrix.os }}
     env:
@@ -123,7 +124,7 @@ jobs:
         # The two platforms don't agree on how to talk about env vars but they
         # do agree on 'cat' and '$()' so we use that to marshal values between commands.
         run: |
-          scripts/build.sh --target "${{ matrix.target }}" "${{ github.ref_name }}"
+          scripts/build.sh --target "${{ matrix.target }}" --version "${{ github.ref_name }}"
 
   # Mark the Github Release™ as a non-draft now that everything has succeeded!
   publish-release:
