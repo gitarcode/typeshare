@@ -3,7 +3,7 @@
 This script is used to deploy a binary to the releases page of a GitHub repository.
 
 ## Pre-requisites
-`gh cli` must be installed and authenticated.
+1. `gh cli` must be installed and authenticated.
 
 Installation:
 ```sh
@@ -14,6 +14,15 @@ Authentication:
 ```sh
 gh auth login
 ```
+
+2. Make sure a release has already been created and triggered. To do this make sure to tag the commit with the version number.
+
+```sh
+git tag -a v1.12.0 -m "Release v1.12.0"
+git push origin v1.12.0
+```
+
+3. Monitor the release pipeline here: https://github.com/gitarcode/typeshare/actions/workflows/release.yml
 
 ## Usage
 
@@ -33,5 +42,5 @@ Options:
 ## Example
 
 ```sh
-./build.sh --version 1.12.0 --target aarch64-apple-darwin
+./build.sh --version v1.12.0 --target aarch64-apple-darwin
 ```
