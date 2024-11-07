@@ -14,6 +14,7 @@ function help() {
     echo "                             * \"aarch64-unknown-linux-gnu\""
     echo "                             * \"x86_64-unknown-linux-gnu\""
     echo "                             * \"x86_64-pc-windows-msvc\""
+    echo "  --dry-run              Run the script without releasing"
     exit 0
 }
 
@@ -26,6 +27,8 @@ function help() {
 TARGET=""
 # --version <version>
 VERSION=""
+# --dry-run
+DRY_RUN=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -41,6 +44,10 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
         -h|--help)
             help
             ;;
@@ -52,12 +59,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if required arguments are provided
-if [ -z "${TARGET}" ]; then
+if [[ -z "${TARGET}" ]]; then
     echo "Missing required argument: --target"
     exit 1
 fi
 
-if [ -z "$VERSION" ]; then
+if [[ -z "$VERSION" ]]; then
     echo "Missing required argument: --version"
     exit 1
 fi
@@ -87,9 +94,13 @@ echo "{\"artifacts\": [{\"path\": \"dist/${ZIP_NAME}\"}]}" > dist-manifest.json
 echo "Build complete, contents of dist-manifest.json:"
 cat dist-manifest.json
 
-# Upload to release
-cat dist-manifest.json | jq --raw-output ".artifacts[]?.path | select( . != null )" > uploads.txt
-echo "uploading..."
-cat uploads.txt
-gh release upload ${VERSION} $(cat uploads.txt)
-echo "uploaded!"
+if [[ "$DRY_RUN" == true ]]; then
+    echo "ℹ️ Dry run, skipping release upload"
+else
+    # Upload to release
+    cat dist-manifest.json | jq --raw-output ".artifacts[]?.path | select( . != null )" > uploads.txt
+    echo "uploading..."
+    cat uploads.txt
+    gh release upload ${VERSION} $(cat uploads.txt)
+    echo "uploaded!"
+fi
