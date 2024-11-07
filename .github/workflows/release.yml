@@ -123,7 +123,7 @@ jobs:
         # The two platforms don't agree on how to talk about env vars but they
         # do agree on 'cat' and '$()' so we use that to marshal values between commands.
         run: |
-          scripts/build.sh --target " " ${{ github.ref_name }}
+          scripts/build.sh --target "${{ matrix.target }}" "${{ github.ref_name }}"
 
   # Mark the Github Release™ as a non-draft now that everything has succeeded!
   publish-release:
