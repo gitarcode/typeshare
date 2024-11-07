@@ -70,7 +70,7 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 # Build the project
-pip3 install ziglang --break-system-packages
+pip3 install ziglang
 cargo install cargo-zigbuild
 rustup target add "${TARGET}"
 cargo zigbuild --target "${TARGET}" --release
