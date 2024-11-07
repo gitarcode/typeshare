@@ -13,3 +13,7 @@ dist/
 # IDE specific files
 .idea/
 .vscode/
+
+upload.txt
+dist-manifest.json
+.intentionally-empty-file.o
