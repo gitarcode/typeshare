@@ -15,13 +15,15 @@ use std::{
 
 use anyhow::{anyhow, Context};
 use clap::{CommandFactory, Parser};
-use clap_complete::Generator;
+use clap_complete::aot::generate;
+use flexi_logger::AdaptiveFormat;
 use ignore::{overrides::OverrideBuilder, types::TypesBuilder, WalkBuilder};
-use log::error;
+use log::{error, info};
 use rayon::iter::ParallelBridge;
 #[cfg(feature = "go")]
 use typeshare_core::language::Go;
 use typeshare_core::{
+    context::ParseContext,
     language::{
         CrateName, GenericConstraints, Kotlin, Language, Scala, SupportedLanguage, Swift,
         TypeScript,
@@ -37,17 +39,21 @@ use crate::{
 };
 
 fn main() -> anyhow::Result<()> {
-    flexi_logger::Logger::try_with_env()
-        .unwrap()
-        .start()
-        .unwrap();
+    flexi_logger::Logger::try_with_env_or_str("info")?
+        .adaptive_format_for_stderr(AdaptiveFormat::Detailed)
+        .adaptive_format_for_stdout(AdaptiveFormat::Detailed)
+        .start()?;
 
     let options = Args::parse();
+
+    info!("typeshare started generating types");
 
     if let Some(options) = options.subcommand {
         match options {
             Command::Completions { shell } => {
-                shell.generate(&Args::command(), &mut io::stdout().lock())
+                let mut cmd = Args::command();
+                let bin_name = cmd.get_name().to_string();
+                generate(shell, &mut cmd, bin_name, &mut io::stdout());
             }
         }
 
@@ -68,6 +74,8 @@ fn main() -> anyhow::Result<()> {
     let config = override_configuration(config, &options)?;
 
     let directories = options.directories.as_slice();
+
+    info!("Using directories: {directories:?}");
 
     let language_type = match options.language {
         None => panic!("no language specified; `clap` should have guaranteed its presence"),
@@ -107,7 +115,7 @@ fn main() -> anyhow::Result<()> {
         .overrides(overrides)
         .follow_links(options.follow_links);
 
-    for root in directories {
+    for root in directories.iter().skip(1) {
         walker_builder.add(root);
     }
 
@@ -124,9 +132,13 @@ fn main() -> anyhow::Result<()> {
 
     let multi_file = matches!(destination, Output::Folder(_));
     let target_os = config.target_os.clone();
-
     let mut lang = language(language_type, config, multi_file);
-    let ignored_types = lang.ignored_reference_types();
+
+    let parse_context = ParseContext {
+        ignored_types: lang.ignored_reference_types(),
+        multi_file,
+        target_os,
+    };
 
     // The walker ignores directories that are git-ignored. If you need
     // a git-ignored directory to be processed, add the specific directory to
@@ -138,9 +150,7 @@ fn main() -> anyhow::Result<()> {
     // https://docs.rs/ignore/latest/ignore/struct.WalkParallel.html
     let crate_parsed_data = parse_input(
         parser_inputs(walker_builder, language_type, multi_file).par_bridge(),
-        &ignored_types,
-        multi_file,
-        &target_os,
+        &parse_context,
     )?;
 
     // Collect all the types into a map of the file name they
@@ -153,6 +163,9 @@ fn main() -> anyhow::Result<()> {
     };
 
     check_parse_errors(&crate_parsed_data)?;
+
+    info!("typeshare started writing generated types");
+
     write_generated(
         destination,
         lang.as_mut(),
@@ -160,6 +173,7 @@ fn main() -> anyhow::Result<()> {
         import_candidates,
     )?;
 
+    info!("typeshare finished generating types");
     Ok(())
 }
 
@@ -244,7 +258,13 @@ fn override_configuration(mut config: Config, options: &Args) -> anyhow::Result<
         if let Some(go_package) = options.go_package.as_ref() {
             config.go.package = go_package.to_string();
         }
-        assert_go_package_present(&config)?;
+
+        if matches!(options.language, Some(args::AvailableLanguage::Go)) {
+            anyhow::ensure!(
+                    !config.go.package.is_empty(),
+                   "Please provide a package name in the typeshare.toml or using --go-package <package name>"
+                );
+        }
     }
 
     config.target_os = options.target_os.as_deref().unwrap_or_default().to_vec();
@@ -262,25 +282,16 @@ fn check_parse_errors(parsed_crates: &BTreeMap<CrateName, ParsedData>) -> anyhow
         errors_encountered = true;
         for error in &data.errors {
             error!(
-                "Parsing error: \"{}\" in crate \"{}\" for file \"{}\"",
-                error.error, error.crate_name, error.file_name
+                "Parsing error: \"{}\" in file \"{}\"",
+                error.error, error.file_name
             );
         }
     }
 
     if errors_encountered {
+        error!("Errors encountered during parsing.");
         Err(anyhow!("Errors encountered during parsing."))
     } else {
         Ok(())
     }
-}
-
-#[cfg(feature = "go")]
-fn assert_go_package_present(config: &Config) -> anyhow::Result<()> {
-    if config.go.package.is_empty() {
-        return Err(anyhow!(
-            "Please provide a package name in the typeshare.toml or using --go-package <package name>"
-        ));
-    }
-    Ok(())
 }
