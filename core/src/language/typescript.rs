@@ -308,7 +308,7 @@ impl TypeScript {
                     RustEnumVariant::Tuple { ty, shared } => {
                         let r#type = self
                             .format_type(ty, e.shared().generic_types.as_slice())
-                            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                            .map_err(std::io::Error::other)?;
                         if !tag_key.is_empty() {
                             if !content_key.is_empty() {
                                 write!(
@@ -317,7 +317,7 @@ impl TypeScript {
                                     tag_key,
                                     shared.id.renamed,
                                     content_key,
-                                    ty.is_optional().then_some("?").unwrap_or_default(),
+                                    if ty.is_optional() { "?" } else { Default::default() },
                                     r#type
                                 )
                             } else {
@@ -328,7 +328,7 @@ impl TypeScript {
                                 w,
                                 "\t| {{ {:?}{}: {} }}",
                                 shared.id.renamed,
-                                ty.is_optional().then_some("?").unwrap_or_default(),
+                                if ty.is_optional() { "?" } else { Default::default() },
                                 r#type
                             )
                         }

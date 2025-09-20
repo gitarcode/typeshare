@@ -117,7 +117,7 @@ impl Language for Scala {
                 return Err(RustTypeFormatError::UnsupportedSpecialType(
                     special_ty.to_string(),
                 ))
-            },
+            }
             SpecialRustType::U128 => "BigInt".into(),
         })
     }

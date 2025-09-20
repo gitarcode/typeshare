@@ -220,7 +220,7 @@ impl Language for Swift {
                 return Err(RustTypeFormatError::UnsupportedSpecialType(
                     special_ty.to_string(),
                 ))
-            },
+            }
             SpecialRustType::U128 => "UInt128".into(),
         })
     }
