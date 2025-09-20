@@ -252,7 +252,6 @@ export const ReplacerFunc = (key: string, value: unknown): unknown => {{
         w: &mut dyn Write,
         imports: ScopedCrateTypes<'_>,
     ) -> std::io::Result<()> {
-        writeln!(w, "import type {{ HashSet }} from \"./base\";")?;
         for (path, ty) in imports {
             write!(w, "import type {{ ")?;
             let ty_list = ty.iter().join(", ");
