@@ -285,6 +285,7 @@ impl TypeScript {
             RustEnum::Algebraic {
                 tag_key,
                 content_key,
+                untagged,
                 shared,
             } => shared.variants.iter().try_for_each(|v| {
                 writeln!(w)?;
@@ -323,9 +324,18 @@ impl TypeScript {
                             } else {
                                 panic!("Tuple variants must have a content key if they have a tag key: {:?}", shared.id.original)
                             }
-                        } else {
+                        } else if *untagged {
                             // Untagged: just output the inner type directly
                             write!(w, "\t| {}", r#type)
+                        } else {
+                            // Default externally-tagged: use variant name as key
+                            write!(
+                                w,
+                                "\t| {{ {:?}{}: {} }}",
+                                shared.id.renamed,
+                                if ty.is_optional() { "?" } else { Default::default() },
+                                r#type
+                            )
                         }
                     }
                     RustEnumVariant::AnonymousStruct { fields, shared } => {
