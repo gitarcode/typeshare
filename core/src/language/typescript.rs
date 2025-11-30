@@ -285,6 +285,7 @@ impl TypeScript {
             RustEnum::Algebraic {
                 tag_key,
                 content_key,
+                untagged,
                 shared,
             } => shared.variants.iter().try_for_each(|v| {
                 writeln!(w)?;
@@ -323,7 +324,11 @@ impl TypeScript {
                             } else {
                                 panic!("Tuple variants must have a content key if they have a tag key: {:?}", shared.id.original)
                             }
+                        } else if *untagged {
+                            // Untagged: just output the inner type directly
+                            write!(w, "\t| {}", r#type)
                         } else {
+                            // Default externally-tagged: use variant name as key
                             write!(
                                 w,
                                 "\t| {{ {:?}{}: {} }}",
@@ -344,7 +349,11 @@ impl TypeScript {
                             } else {
                                 panic!("Struct variants must have a content key if they have a tag key: {:?}", shared.id.original)
                             }
+                        } else if *untagged {
+                            // Untagged: just output the struct fields directly
+                            writeln!(w, "\t| {{")?;
                         } else {
+                            // Default externally-tagged: use variant name as key
                             writeln!(w, "\t| {{ {:?}: {{", shared.id.renamed)?;
                         }
                         fields.iter().try_for_each(|f| {
@@ -352,7 +361,12 @@ impl TypeScript {
                         })?;
 
                         write!(w, "}}")?;
-                        write!(w, "}}")
+                        if !tag_key.is_empty() || !*untagged {
+                            // Close the outer wrapper for tagged enums
+                            write!(w, "}}")
+                        } else {
+                            Ok(())
+                        }
                     }
                 }
             }),

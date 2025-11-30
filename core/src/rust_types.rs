@@ -678,6 +678,8 @@ pub enum RustEnum {
         tag_key: String,
         /// The parsed value of the `#[serde(content = "...")]` attribute
         content_key: String,
+        /// Whether this enum has `#[serde(untagged)]`
+        untagged: bool,
         /// Shared context for this enum.
         shared: RustEnumShared,
     },

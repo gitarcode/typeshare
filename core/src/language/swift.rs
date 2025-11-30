@@ -588,6 +588,7 @@ impl Swift {
                 tag_key,
                 content_key,
                 shared,
+                ..
             } => {
                 let generics = &shared.generic_types;
                 for v in &shared.variants {

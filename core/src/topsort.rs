@@ -69,6 +69,7 @@ fn get_enum_dependencies(
             tag_key: _,
             content_key: _,
             shared,
+            ..
         } => {
             if seen.insert(shared.id.original.to_string()) {
                 res.push(shared.id.original.to_string());
@@ -203,6 +204,7 @@ pub(crate) fn topsort(things: &mut [RustItem]) {
                     tag_key: _,
                     content_key: _,
                     shared,
+                    ..
                 } => shared.id.original.clone(),
                 RustEnum::Unit(shared) => shared.id.original.clone(),
             },
